@@ -212,20 +212,19 @@ int main()
             // Draw rect of first face
             rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
 
-
             // Keep bounding rectangle around face points
             Size size = frame.size();
-//            Rect rectFace = boundingRect(points);
-//            Point2f center(rectFace.x + rectFace.width/2,
-//                           rectFace.y + rectFace.height/2);
 
-//            // Add image border points
             vector<Point2f> points;
-
             for(int j=0; j < 68; j++) {
                 points.push_back(landmarks[0][j]);
             }
 
+            Rect rectFace = boundingRect(points);
+            Point2f center(rectFace.x + rectFace.width/2,
+                           rectFace.y + rectFace.height/2);
+
+            // Add image border points
             points.push_back(Point2d(0,0));
             points.push_back(Point2d(size.width/2,0));
             points.push_back(Point2d(size.width-1,0));
@@ -242,15 +241,22 @@ int main()
             // Create and draw the Delaunay triangulation
             vector<vector<int>> triIndexes1;
             createDelaunay(frame, subdiv, points, false, triIndexes1);
-            drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
+            //drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
 
-            // Draw landmarks of first face
-            //for(int j=0; j < 68; j++)
-            //    circle(frame, landmarks[0][j], 3, cv::Scalar(0, 0, 255), -1);
+            vector<Point2f> wPoints = points;
+            float scale = 1.2f;
+            frame.convertTo(frame, CV_32FC3, 1/255.0);
+            Mat imgW = Mat::ones(frame.size(), frame.type());
+
+            // Scale the face points from relative to the face center
+            for (int i=0; i<68; ++i) {
+                wPoints[i] = ((points[i]-center) * scale) + center;
+            }
+
+            // Warp all triangles
+            warpImage(frame, imgW, points, wPoints, triIndexes1);
+            imshow("Warped Image", imgW);
         }
-
-        // Display results
-        imshow("Snapchat Filter", frame);
         
         // Wait for key to exit loop
         if (waitKey(10) != -1)
