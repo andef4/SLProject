@@ -165,6 +165,15 @@ static void warpImage(Mat& img1,
 }
 
 //-----------------------------------------------------------------------------
+
+
+inline Point2f scalePoint(Point2f point, Point2f center, float scaleX, float scaleY) {
+    point -= center;
+    point = Point2f(point.x * scaleX, point.y * scaleY);
+    return point + center;
+}
+
+//-----------------------------------------------------------------------------
 int main()
 {
     // Load Face Detector
@@ -248,9 +257,21 @@ int main()
             frame.convertTo(frame, CV_32FC3, 1/255.0);
             Mat imgW = Mat::ones(frame.size(), frame.type());
 
-            // Scale the face points from relative to the face center
-            for (int i=0; i<68; ++i) {
-                wPoints[i] = ((points[i]-center) * scale) + center;
+            // linker mund punkt
+            wPoints[48] = scalePoint(points[48], center, 1.5, 1);
+            wPoints[60] = scalePoint(points[60], center, 1.5, 1);
+            // rechter mund punkt
+            wPoints[54] = scalePoint(points[54], center, 1.5, 1);
+            wPoints[64] = scalePoint(points[64], center, 1.5, 1);
+
+            wPoints[49] = scalePoint(points[49], center, 1, 0.7);
+            wPoints[50] = scalePoint(points[50], center, 1, 0.8);
+            wPoints[51] = scalePoint(points[51], center, 1, 0.8);
+            wPoints[52] = scalePoint(points[52], center, 1, 0.8);
+            wPoints[53] = scalePoint(points[53], center, 1, 0.7);
+
+            for (int i = 55; i <= 59; i++) {
+                wPoints[i] = scalePoint(points[i], center, 1, 1.2);
             }
 
             // Warp all triangles
@@ -264,4 +285,6 @@ int main()
     }
     return 0;
 }
+
+
 //-----------------------------------------------------------------------------
