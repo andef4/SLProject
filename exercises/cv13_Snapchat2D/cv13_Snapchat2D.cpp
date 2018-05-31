@@ -171,6 +171,13 @@ inline Point2f scalePoint(Point2f point, float translateX, float translateY) {
     return Point2f(point.x + translateX, point.y + translateY);
 }
 
+
+inline Point2f scalePointCenter(Point2f point, Point2f center, float scaleX, float scaleY) {
+    point -= center;
+    point = Point2f(point.x * scaleX, point.y * scaleY);
+    return point + center;
+}
+
 //-----------------------------------------------------------------------------
 int main()
 {
@@ -282,6 +289,26 @@ int main()
 
                 wPoints[43] = scalePoint(points[43], 0, rightEyeHeight2 * -0.7);
                 wPoints[47] = scalePoint(points[47], 0, rightEyeHeight2 * 0.7);
+
+
+                // left mouth points
+                wPoints[48] = scalePointCenter(points[48], center, 1.5, 1);
+                wPoints[60] = scalePointCenter(points[60], center, 1.5, 1);
+                // right mouth points
+                wPoints[54] = scalePointCenter(points[54], center, 1.5, 1);
+                wPoints[64] = scalePointCenter(points[64], center, 1.5, 1);
+
+                // upper lip
+                wPoints[49] = scalePointCenter(points[49], center, 1, 0.7);
+                wPoints[50] = scalePointCenter(points[50], center, 1, 0.8);
+                wPoints[51] = scalePointCenter(points[51], center, 1, 0.8);
+                wPoints[52] = scalePointCenter(points[52], center, 1, 0.8);
+                wPoints[53] = scalePointCenter(points[53], center, 1, 0.7);
+
+                // lower lip
+                for (int i = 55; i <= 59; i++) {
+                    wPoints[i] = scalePointCenter(points[i], center, 1, 1.2);
+                }
 
                 // Warp all triangles
                 warpImage(frame, imgW, points, wPoints, triIndexes1);
