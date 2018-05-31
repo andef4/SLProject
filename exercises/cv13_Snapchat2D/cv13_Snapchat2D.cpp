@@ -108,6 +108,16 @@ int main()
      
     // Variable to store a video frame and its grayscale 
     Mat frame, gray;
+
+    std::vector<cv::Scalar> colors = {
+        cv::Scalar(47, 20, 249),
+        cv::Scalar(39, 126, 250),
+        cv::Scalar(73, 254, 241),
+        cv::Scalar(64, 253, 103),
+        cv::Scalar(252, 218, 94),
+        cv::Scalar(249, 68, 67),
+        cv::Scalar(144, 12, 155)
+    };
      
     // Read a frame
     while(cam.read(frame))
@@ -136,7 +146,7 @@ int main()
         if(success && landmarks.size() >= 1) {
             try {
                 // Draw rect of first face
-                rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
+                // rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
 
                 // Keep bounding rectangle around face points
                 Size size = frame.size();
@@ -168,20 +178,26 @@ int main()
                 vector<vector<int>> triIndexes1;
 
                 createDelaunay(frame, subdiv, points, false, triIndexes1);
-
-                drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
+                // drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
 
                 float mouthHeight = cv::norm(points[51] - points[57]);
                 float faceHeight = cv::norm(points[27] - points[33]);
 
                 float ratio = mouthHeight / faceHeight;
 
-                if (ratio > 0.4) {
-                    cout << "open" << endl;
-                } else {
-                    cout << "closed" << endl;
-                }
+                // check if mouth is open
+                if (ratio > 0.5) {
+                    float width = points[54].x - points[48].x;
+                    float widthPerBow = width / colors.size();
 
+                    int topY = points[48].y > points[54].y ? points[48].y : points[54].y;
+                    int bottomY = size.height;
+                    int x = points[48].x;
+
+                    for (int i = 0; i < colors.size(); i++) {
+                        cv::rectangle(frame, Point(x + i * widthPerBow, topY), Point(x + (i+1) * widthPerBow, bottomY), colors[i], cv::FILLED);
+                    }
+                }
                 imshow("Snapchat", frame);
 
             } catch (cv::Exception ex) {
