@@ -167,10 +167,8 @@ static void warpImage(Mat& img1,
 //-----------------------------------------------------------------------------
 
 
-inline Point2f scalePoint(Point2f point, Point2f center, float scaleX, float scaleY) {
-    point -= center;
-    point = Point2f(point.x * scaleX, point.y * scaleY);
-    return point + center;
+inline Point2f scalePoint(Point2f point, float translateX, float translateY) {
+    return Point2f(point.x + translateX, point.y + translateY);
 }
 
 //-----------------------------------------------------------------------------
@@ -216,67 +214,82 @@ int main()
         // Run landmark detector
         bool success = facemark->fit(frame,faces,landmarks);
 
-        if(success && landmarks.size() >= 1)
-        {
-            // Draw rect of first face
-            rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
+        if(success && landmarks.size() >= 1) {
+            try {
+                // Draw rect of first face
+                rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
 
-            // Keep bounding rectangle around face points
-            Size size = frame.size();
+                // Keep bounding rectangle around face points
+                Size size = frame.size();
 
-            vector<Point2f> points;
-            for(int j=0; j < 68; j++) {
-                points.push_back(landmarks[0][j]);
+                vector<Point2f> points;
+                for(int j=0; j < 68; j++) {
+                    points.push_back(landmarks[0][j]);
+                }
+
+                Rect rectFace = boundingRect(points);
+                Point2f center(rectFace.x + rectFace.width/2,
+                               rectFace.y + rectFace.height/2);
+
+                // Add image border points
+                points.push_back(Point2f(0, 0));
+                points.push_back(Point2f(size.width / 2, 0));
+                points.push_back(Point2f(size.width - 1, 0));
+                points.push_back(Point2f(size.width - 1, size.height/2));
+                points.push_back(Point2f(size.width - 1, size.height-1));
+                points.push_back(Point2f(size.width / 2, size.height-1));
+                points.push_back(Point2f(0, size.height-1));
+                points.push_back(Point2f(0, size.height/2));
+
+                // Create an instance of Subdiv2D
+                Rect rect(0, 0, size.width, size.height);
+                Subdiv2D subdiv(rect);
+
+                // Create and draw the Delaunay triangulation
+                vector<vector<int>> triIndexes1;
+
+                createDelaunay(frame, subdiv, points, false, triIndexes1);
+
+                //drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
+
+                vector<Point2f> wPoints = points;
+                float scale = 1.2f;
+                frame.convertTo(frame, CV_32FC3, 1/255.0);
+                Mat imgW = Mat::ones(frame.size(), frame.type());
+
+                // left eye
+                float leftEyeWidth = cv::norm(points[36] - points[39]);
+                double leftEyeHeight1 = cv::norm(points[37] - points[41]);
+                double leftEyeHeight2 = cv::norm(points[38] - points[40]);
+                wPoints[36] = scalePoint(points[36], leftEyeWidth * -0.2, 0);
+                wPoints[39] = scalePoint(points[39], leftEyeWidth * 0.3, 0);
+
+                wPoints[37] = scalePoint(points[37], 0, leftEyeHeight1 * -0.7);
+                wPoints[41] = scalePoint(points[41], 0, leftEyeHeight1 * 0.7);
+
+                wPoints[38] = scalePoint(points[38], 0, leftEyeHeight1 * -0.7);
+                wPoints[40] = scalePoint(points[40], 0, leftEyeHeight2 * 0.7);
+
+                // right eye
+                float rightEyeWidth = cv::norm(points[42] - points[45]);
+                double rightEyeHeight1 = cv::norm(points[44] - points[46]);
+                double rightEyeHeight2 = cv::norm(points[43] - points[47]);
+                wPoints[45] = scalePoint(points[45], rightEyeWidth * 0.2, 0);
+                wPoints[42] = scalePoint(points[42], rightEyeWidth * -0.3, 0);
+
+                wPoints[44] = scalePoint(points[44], 0, rightEyeHeight1 * -0.7);
+                wPoints[46] = scalePoint(points[46], 0, rightEyeHeight1 * 0.7);
+
+                wPoints[43] = scalePoint(points[43], 0, rightEyeHeight2 * -0.7);
+                wPoints[47] = scalePoint(points[47], 0, rightEyeHeight2 * 0.7);
+
+                // Warp all triangles
+                warpImage(frame, imgW, points, wPoints, triIndexes1);
+                imshow("Snapchat", imgW);
+            } catch (cv::Exception ex) {
+                cout << ex.what() << endl;
+                imshow("Snapchat", frame);
             }
-
-            Rect rectFace = boundingRect(points);
-            Point2f center(rectFace.x + rectFace.width/2,
-                           rectFace.y + rectFace.height/2);
-
-            // Add image border points
-            points.push_back(Point2d(0,0));
-            points.push_back(Point2d(size.width/2,0));
-            points.push_back(Point2d(size.width-1,0));
-            points.push_back(Point2d(size.width-1,size.height/2));
-            points.push_back(Point2d(size.width-1,size.height-1));
-            points.push_back(Point2d(size.width/2,size.height-1));
-            points.push_back(Point2d(0,size.height-1));
-            points.push_back(Point2d(0,size.height/2));
-
-            // Create an instance of Subdiv2D
-            Rect rect(0, 0, size.width, size.height);
-            Subdiv2D subdiv(rect);
-
-            // Create and draw the Delaunay triangulation
-            vector<vector<int>> triIndexes1;
-            createDelaunay(frame, subdiv, points, false, triIndexes1);
-            //drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
-
-            vector<Point2f> wPoints = points;
-            float scale = 1.2f;
-            frame.convertTo(frame, CV_32FC3, 1/255.0);
-            Mat imgW = Mat::ones(frame.size(), frame.type());
-
-            // linker mund punkt
-            wPoints[48] = scalePoint(points[48], center, 1.5, 1);
-            wPoints[60] = scalePoint(points[60], center, 1.5, 1);
-            // rechter mund punkt
-            wPoints[54] = scalePoint(points[54], center, 1.5, 1);
-            wPoints[64] = scalePoint(points[64], center, 1.5, 1);
-
-            wPoints[49] = scalePoint(points[49], center, 1, 0.7);
-            wPoints[50] = scalePoint(points[50], center, 1, 0.8);
-            wPoints[51] = scalePoint(points[51], center, 1, 0.8);
-            wPoints[52] = scalePoint(points[52], center, 1, 0.8);
-            wPoints[53] = scalePoint(points[53], center, 1, 0.7);
-
-            for (int i = 55; i <= 59; i++) {
-                wPoints[i] = scalePoint(points[i], center, 1, 1.2);
-            }
-
-            // Warp all triangles
-            warpImage(frame, imgW, points, wPoints, triIndexes1);
-            imshow("Warped Image", imgW);
         }
         
         // Wait for key to exit loop
