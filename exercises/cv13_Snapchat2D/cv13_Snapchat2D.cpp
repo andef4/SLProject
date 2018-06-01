@@ -237,7 +237,7 @@ int main()
         if(success && landmarks.size() >= 1) {
             try {
                 // Draw rect of first face
-                rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
+                // rectangle(frame, faces[0], cv::Scalar(255, 0, 0), 2);
 
                 // Keep bounding rectangle around face points
                 Size size = frame.size();
@@ -327,17 +327,19 @@ int main()
                 }
 
                 // draw hat
+                const int SCALE = 4;
+
                 auto leftHead = points[19];
                 auto rightHead = points[24];
-                auto width = rightHead.x - leftHead.x;
+                auto pointDifference = rightHead.x - leftHead.x;
+                auto width = pointDifference * SCALE;
                 auto aspectRationHat = float(hatImage.size().height) / float(hatImage.size().width);
                 auto height = width * aspectRationHat;
 
                 cv::Mat4f resizedHat;
-                cout << hatImage.type() << " " << resizedHat.type() << endl;
                 cv::resize(hatImage, resizedHat, Size(width, height));
 
-                cv::Rect roi(cv::Point(leftHead.x, leftHead.y - height), resizedHat.size());
+                cv::Rect roi(cv::Point(leftHead.x - ((width - pointDifference) / 2), leftHead.y - height), resizedHat.size());
                 cv::Mat3f destinationROI = imgW(roi);
 
                 for (int r = 0; r < destinationROI.rows; ++r) {
