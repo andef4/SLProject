@@ -198,6 +198,16 @@ int main()
     // Variable to store a video frame and its grayscale 
     Mat frame, gray;
      
+    std::vector<cv::Scalar> colors = {
+        cv::Scalar(47, 20, 249) / 255.0f,
+        cv::Scalar(39, 126, 250) / 255.0f,
+        cv::Scalar(73, 254, 241) / 255.0f,
+        cv::Scalar(64, 253, 103) / 255.0f,
+        cv::Scalar(252, 218, 94) / 255.0f,
+        cv::Scalar(249, 68, 67) / 255.0f,
+        cv::Scalar(144, 12, 155) / 255.0f
+    };
+
     // Read a frame
     while(cam.read(frame))
     {
@@ -271,11 +281,11 @@ int main()
                 wPoints[36] = scalePoint(points[36], leftEyeWidth * -0.2, 0);
                 wPoints[39] = scalePoint(points[39], leftEyeWidth * 0.3, 0);
 
-                wPoints[37] = scalePoint(points[37], 0, leftEyeHeight1 * -0.7);
-                wPoints[41] = scalePoint(points[41], 0, leftEyeHeight1 * 0.7);
+                wPoints[37] = scalePoint(points[37], 0, leftEyeHeight1 * -0.9);
+                wPoints[41] = scalePoint(points[41], 0, leftEyeHeight1 * 0.9);
 
-                wPoints[38] = scalePoint(points[38], 0, leftEyeHeight1 * -0.7);
-                wPoints[40] = scalePoint(points[40], 0, leftEyeHeight2 * 0.7);
+                wPoints[38] = scalePoint(points[38], 0, leftEyeHeight1 * -0.9);
+                wPoints[40] = scalePoint(points[40], 0, leftEyeHeight2 * 0.9);
 
                 // right eye
                 float rightEyeWidth = cv::norm(points[42] - points[45]);
@@ -284,34 +294,35 @@ int main()
                 wPoints[45] = scalePoint(points[45], rightEyeWidth * 0.2, 0);
                 wPoints[42] = scalePoint(points[42], rightEyeWidth * -0.3, 0);
 
-                wPoints[44] = scalePoint(points[44], 0, rightEyeHeight1 * -0.7);
-                wPoints[46] = scalePoint(points[46], 0, rightEyeHeight1 * 0.7);
+                wPoints[44] = scalePoint(points[44], 0, rightEyeHeight1 * -0.9);
+                wPoints[46] = scalePoint(points[46], 0, rightEyeHeight1 * 0.9);
 
-                wPoints[43] = scalePoint(points[43], 0, rightEyeHeight2 * -0.7);
-                wPoints[47] = scalePoint(points[47], 0, rightEyeHeight2 * 0.7);
-
-
-                // left mouth points
-                wPoints[48] = scalePointCenter(points[48], center, 1.5, 1);
-                wPoints[60] = scalePointCenter(points[60], center, 1.5, 1);
-                // right mouth points
-                wPoints[54] = scalePointCenter(points[54], center, 1.5, 1);
-                wPoints[64] = scalePointCenter(points[64], center, 1.5, 1);
-
-                // upper lip
-                wPoints[49] = scalePointCenter(points[49], center, 1, 0.7);
-                wPoints[50] = scalePointCenter(points[50], center, 1, 0.8);
-                wPoints[51] = scalePointCenter(points[51], center, 1, 0.8);
-                wPoints[52] = scalePointCenter(points[52], center, 1, 0.8);
-                wPoints[53] = scalePointCenter(points[53], center, 1, 0.7);
-
-                // lower lip
-                for (int i = 55; i <= 59; i++) {
-                    wPoints[i] = scalePointCenter(points[i], center, 1, 1.2);
-                }
+                wPoints[43] = scalePoint(points[43], 0, rightEyeHeight2 * -0.9);
+                wPoints[47] = scalePoint(points[47], 0, rightEyeHeight2 * 0.9);
 
                 // Warp all triangles
                 warpImage(frame, imgW, points, wPoints, triIndexes1);
+
+                // rainbow
+                float mouthHeight = cv::norm(points[51] - points[57]);
+                float faceHeight = cv::norm(points[27] - points[33]);
+
+                float ratio = mouthHeight / faceHeight;
+
+                // check if mouth is open
+                if (ratio > 0.5) {
+                    float width = points[54].x - points[48].x;
+                    float widthPerBow = width / colors.size();
+
+                    int topY = points[48].y > points[54].y ? points[48].y : points[54].y;
+                    int bottomY = size.height;
+                    int x = points[48].x;
+
+                    for (int i = 0; i < colors.size(); i++) {
+                        cv::rectangle(imgW, Point(x + i * widthPerBow, topY), Point(x + (i+1) * widthPerBow, bottomY), colors[i], cv::FILLED);
+                    }
+                }
+
                 imshow("Snapchat", imgW);
             } catch (cv::Exception ex) {
                 cout << ex.what() << endl;
