@@ -208,6 +208,9 @@ int main()
         cv::Scalar(144, 12, 155) / 255.0f
     };
 
+    cv::Mat hatImage = cv::imread("../_data/images/hat.png", cv::IMREAD_UNCHANGED);
+    hatImage.convertTo(hatImage, CV_32FC4, 1/255.0);
+
     // Read a frame
     while(cam.read(frame))
     {
@@ -267,7 +270,7 @@ int main()
 
                 createDelaunay(frame, subdiv, points, false, triIndexes1);
 
-                //drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
+                // drawDelaunay(frame, subdiv, Scalar(255, 255, 255));
 
                 vector<Point2f> wPoints = points;
                 float scale = 1.2f;
@@ -310,7 +313,7 @@ int main()
                 float ratio = mouthHeight / faceHeight;
 
                 // check if mouth is open
-                if (ratio > 0.5) {
+                if (ratio > 0.4) {
                     float width = points[54].x - points[48].x;
                     float widthPerBow = width / colors.size();
 
@@ -323,13 +326,37 @@ int main()
                     }
                 }
 
+                // draw hat
+                auto leftHead = points[19];
+                auto rightHead = points[24];
+                auto width = rightHead.x - leftHead.x;
+                auto aspectRationHat = float(hatImage.size().height) / float(hatImage.size().width);
+
+                cv::Mat4f resizedHat;
+                cout << hatImage.type() << " " << resizedHat.type() << endl;
+                cv::resize(hatImage, resizedHat, Size(width, width * aspectRationHat));
+
+                cv::Rect roi(cv::Point(10, 10), resizedHat.size());
+                cv::Mat3f destinationROI = imgW(roi);
+
+                for (int r = 0; r < destinationROI.rows; ++r) {
+                    for (int c = 0; c < destinationROI.cols; ++c) {
+                       const Vec4f& sourcePixel = resizedHat(r, c);
+                       if (sourcePixel[3] > 0) {// alpha channel > 0
+                           Vec3f& destPixel = destinationROI(r, c);
+                           destPixel[0] = sourcePixel[0];
+                           destPixel[1] = sourcePixel[1];
+                           destPixel[2] = sourcePixel[2];
+                       }
+                   }
+                }
+
                 imshow("Snapchat", imgW);
             } catch (cv::Exception ex) {
                 cout << ex.what() << endl;
                 imshow("Snapchat", frame);
             }
         }
-        
         // Wait for key to exit loop
         if (waitKey(10) != -1)
             return 0;
