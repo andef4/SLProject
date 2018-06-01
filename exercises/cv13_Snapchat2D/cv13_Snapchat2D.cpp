@@ -331,12 +331,13 @@ int main()
                 auto rightHead = points[24];
                 auto width = rightHead.x - leftHead.x;
                 auto aspectRationHat = float(hatImage.size().height) / float(hatImage.size().width);
+                auto height = width * aspectRationHat;
 
                 cv::Mat4f resizedHat;
                 cout << hatImage.type() << " " << resizedHat.type() << endl;
-                cv::resize(hatImage, resizedHat, Size(width, width * aspectRationHat));
+                cv::resize(hatImage, resizedHat, Size(width, height));
 
-                cv::Rect roi(cv::Point(10, 10), resizedHat.size());
+                cv::Rect roi(cv::Point(leftHead.x, leftHead.y - height), resizedHat.size());
                 cv::Mat3f destinationROI = imgW(roi);
 
                 for (int r = 0; r < destinationROI.rows; ++r) {
